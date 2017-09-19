@@ -15,7 +15,10 @@ Once you have Node installed:
   ```node
      npm install
   ```
-This will install all the required node_modules.
+This will install all the required node_modules. There is one more dependency, `nodemon` that I'm using to automatically restart the server when changes occur. You *might* need to install it globally. If so, run:
+```node
+  npm install -g nodemon
+```
 
 ### Configuration
   1) Rename `variables.env.sample` to `variables.env`
