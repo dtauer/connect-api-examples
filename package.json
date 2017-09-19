@@ -1,0 +1,21 @@
+{
+  "name": "connect-api-examples",
+  "version": "1.0.0",
+  "description": "Playground for working with the Adobe Connect API",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon server.js"
+  },
+  "author": "Dustin Tauer",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.16.2",
+    "dotenv": "^4.0.0",
+    "express": "^4.15.4",
+    "xml2json": "^0.11.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.12.0"
+  }
+}

@@ -1,0 +1,164 @@
+<!-- 
+  File: display-users-and-groups.html
+  
+  Author: Dustin Tauer, Easel Solutions (dustin@easelsolutins.com)
+
+  Description: This example displays all the Connect users associated with the account and the groups in which they belong. Click each user to collapse/expand the list of groups. 
+  
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Document</title>
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+
+  <!-- CSS Reset -->
+  <link rel="stylesheet" href="//cdn.rawgit.com/necolas/normalize.css/master/normalize.css">
+
+  <!-- Milligram CSS minified -->
+  <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+
+
+  <style>
+    body {
+      padding: 2em;
+    }
+
+    a.user,
+    a.user:visited {
+      color: #606c76;
+      cursor: pointer;
+    }
+
+    .user:hover {
+      color: #4d92ca;
+    }
+
+    li ul {
+      display: none;
+    }
+
+    .expanded + ul {
+      display: block;
+    }
+
+  </style>
+
+</head>
+<body>
+  <h2>Users & Group Membership</h2>
+
+  <ul id="container"></ul>
+
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.rawgit.com/abdmob/x2js/master/xml2json.js"></script>
+  
+  <script>
+    const url = '/api/xml'
+    const container = document.querySelector('#container')
+
+    const toJSON = (xml) => {
+      const x2js = new X2JS()
+      return x2js.xml_str2json(xml)
+    }
+
+    // API action: principal-list, return a list of all principal id's
+    // Set filter-type=user so we only get users
+    const principalList = async () => {
+      const result = await axios({
+        method: 'get',
+        url,
+        params: {
+          action: 'principal-list',
+          'filter-type': 'user'
+        }
+      })
+      return result
+    }
+
+    // API action: principal-list, filter by filter-is-member=true
+    // This function is passed a principal ID and it finds all groups where
+    // this principal ID is a member
+    const getGroupMembership = async (principalID) => {
+      const result = await axios({
+        method: 'get',
+        url,
+        params: {
+          action: 'principal-list',
+          'principal-id': principalID,
+          'filter-is-member': true
+        }
+      })
+      return result
+    }
+
+    const getUsersAndGroups = async () => {
+
+      // First, call prinicpalList to get all users on the serve
+      result = await principalList()
+      const allUsers = toJSON(result.data).results['principal-list'].principal
+
+      // Now it gets a little crazy. We have to loop through all the users and
+      // call getGroupMembership() for each one. Since these are asynchronous
+      // calls  to the API (called Promises) we'll save them in an array
+      const userPromises = allUsers.map(async (user) => {
+        // Get the list of groups for the user
+        const groups = await getGroupMembership(user['_principal-id'])
+        // return an Object with the principal ID, name, email, and list of groups
+        return {
+          principalID: user['_principal-id'],
+          name: user.name,
+          email: user.email,
+          groups: toJSON(groups.data).results['principal-list'].principal
+        }
+      })
+
+      // Once all the user API calls finish they will be stored in the 
+      // usersAndGroups variable
+      const usersAndGroups = await Promise.all(userPromises)
+
+      // Finally, loop through the users and groups and make a <li></li>
+      // Tag with the User and a sublist of all their groups and
+      // Append the user to the unordered list
+      usersAndGroups.forEach( user => {
+        // The API is a little weird because if they belong to one group, the groups variable is an Object. If it's multiple groups, the variable is an array.
+        // The conditions below are to handle these cases
+        let groups
+        if (Array.isArray(user.groups)) {
+          groups = user.groups
+            .map(g => g.name)
+            .reduce((prev, curr) => {
+              return `${prev}<li>${curr}</li>`
+            }, '')
+        } else if (user.groups) {
+          groups = `<li>${groups = user.groups.name}</li>`
+        } else {
+          groups = `<li>Not in any groups</li>`
+        }
+        // Append the user's name, email and the sublist of groups to the container
+        container.innerHTML += (`<li><a class="user"><strong>${user.name} (${user.email})</strong></a><ul>${groups}</ul></li>`)
+      })
+
+      const links = document.querySelectorAll('.user')
+      links.forEach( link => {
+        link.addEventListener('click', e => {
+          e.preventDefault()
+          e.currentTarget.classList.toggle('expanded')
+        })
+      })
+
+    }
+
+
+    getUsersAndGroups()
+    
+
+  </script>
+  
+</body>
+</html>

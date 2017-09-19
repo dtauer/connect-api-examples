@@ -1,0 +1,333 @@
+<!-- 
+  File: url-change.html
+  
+  Author: Dustin Tauer, Easel Solutions (dustin@easelsolutins.com)
+
+  Description: This file can be used to change the URL of any meeting you have access to on your Adobe Connect server. Place this file as a piece of content on your Connect Server. Do not make it public since it requires you to already be logged into the server. Once it's added as a piece of content, open the file and follow the on-screen prompts.
+  
+-->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>URL Change Basic</title>
+
+
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+  
+    <!-- Milligram CSS minified -->
+    <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+
+    <style>
+      body {
+        padding: 1em;
+      }
+
+      h1 { font-size: 3rem }
+      h3 { font-size: 2.4rem }
+
+      select,
+      input[type='text'] {
+        font-size: 1em;
+        -webkit-appearance: none;
+      }
+
+      input[type='text']:focus, 
+      select:focus {
+        border-color: #3498db;
+        outline: 0;
+      }
+
+      label {
+        display: inline-block;
+      }
+
+      input[type='text'] {
+        max-width: 400px;
+        margin-left: .5em;
+      }
+
+      .button {
+        margin-top: 1em;
+        background: #3498db;
+      }
+
+      .button:hover {
+        background: #2980b9;
+      }
+
+      .step {
+        padding-top: 2em;
+        margin-top: 2em;
+        border-top: 1px solid currentColor;
+      }
+
+      .step3 span span {
+        font-weight: bold;
+      }
+
+      .step3 > span {
+        display: block;
+      }
+
+      .hidden,
+      .loading-message,
+      .loading .url-changer {
+        display: none;
+      }
+
+      .loading .loading-message {
+        display: block;
+      }
+
+      .application-message {
+        margin-top: 1em;
+        padding: 1em;
+        background: #ecf0f1;
+      }
+
+      .application-message p {
+        margin: 0;
+      }
+
+    </style>
+
+  </head>
+<body>
+  <h1>Change the URL of an existing meeting</h1>
+  <p>Use this tool to change the URL of any meeting. Once the URL is updated, the meeting will no longer be accessible from the previous URL</p>
+
+  <div class="wrapper loading">
+    <div class="url-changer">
+      <div class="step step1 hidden">
+        <h3>Step 1: Select the meeting you'd like to update</h3>
+        <p>Meetings are sorted alphabetically by name</p>
+        <select name="meeting" id="meetingList" >
+          <option value="">-- Select a Meeting Room --</option>
+        </select>
+      </div>
+      <div class="step step2 hidden">
+        <h3>Step 2: What would you like the new URL to be?</h3>
+        <div class="form__item old-url">
+          <label for="oldURL">Old URL:</label>
+          <span class="hostname"></span>
+        </div>
+        <div class="form__item new-url">
+          <label for="newURL">New URL:</label>
+          <span class="hostname"></span>/<input type="text" name="newURL" id="newURL" placeholder="new-url">
+        </div>
+      </div>
+      <div class="step step3 hidden">
+        <h3>Step 3: Confirm Changes</h3>
+        <p>Remember, after the URL is changed, any links to the old URL will no longer work. Review the changes below and click <b>Submit URL Change</b> to complete the change.</p>
+        <span>You are changing this url: <span id="confirmOld">URL</span></span>
+        <span>to this url: <span id="confirmNew">URL</span></span>
+      </div>
+      <a id="next" class="button hidden">Next Step</a>
+    </div>
+    <div class="loading-message">
+      <h4>Loading initalial Meeting List...</h4>
+    </div>
+    <div class="application-message hidden"></div>
+  </div>
+
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.rawgit.com/abdmob/x2js/master/xml2json.js"></script>
+  <script>
+    
+    // utility function for converting XML to JSON
+    const toJSON = (xml) => {
+      const x2js = new X2JS()
+      return x2js.xml_str2json(xml)
+    }
+    
+    const wrapper = document.querySelector('.wrapper')
+    const btNext = document.querySelector('#next')
+    // Step 1 select
+    const listContainer = document.querySelector('#meetingList')
+    // Step 2 new URL textfield
+    const newURLField = document.querySelector('#newURL')
+    let currentStep = 1
+    let updates = {}
+
+    function init(){
+      const old = document.querySelectorAll('.hostname')
+      old.forEach(span => {
+        span.innerHTML = `${window.location.protocol}//${window.location.hostname}`
+      })
+
+      listContainer.addEventListener('change', e => {
+        const value = e.target.value
+        if(!value) {
+          resetStep2()
+        } else {
+          const option = e.target.selectedOptions[0]
+          const meeting = {
+            scoID: value,
+            urlPath: option.dataset.path
+          }
+          showStep2(meeting)
+        }
+      })
+      
+      btNext.addEventListener('click', e => {
+        if(currentStep === 2) {
+          if(newURLField.value !== ''){
+            showStep3(newURLField.value)
+          }
+        } else if(currentStep === 3) {
+          btNext.classList.add('hidden')
+          changeURL()
+        }
+      })
+    }
+
+    function changeURL(){
+      axios({
+        method: 'get',
+        url: '/api/xml',
+        params: {
+          action: 'update-sco-url',
+          'sco-id': updates.oldSCO,
+          'url-path': updates.newURL
+        }
+      })
+      .then(result => {
+        const data = toJSON(result.data)
+        if(data.results.status._code === 'ok') {
+          displayComplete()
+        } else {
+          displayError('An error has occured while trying to change the URL.')
+        }
+      })
+      .catch(e => {
+        displayError('There was an error contacting the server.')
+      })
+    }
+
+    function getMeetings(){
+      // get all Meetings & their SCO id's
+      axios({
+            method: 'get',
+            url: '/api/xml',
+            params: {
+              action: 'report-my-meetings'
+            }
+          })
+      .then(function(results){
+        // convert XML to JSON
+        const response = toJSON(results.data)
+  
+        // TODO: Make sure it's not an error
+        wrapper.classList.remove('loading')
+  
+  
+        // Loop through the data and populate the list
+        let meetings = response.results['my-meetings'].meeting
+        if(!Array.isArray(meetings)) {
+          meetings = [meetings]
+        }
+  
+        // sort array by name
+        meetings.sort((a, b) => {
+          const nameA = a.name.toUpperCase()
+          const nameB = b.name.toUpperCase()
+          if(nameA < nameB) { 
+            return -1 
+          } 
+          if(nameA > nameB) { 
+            return 1 
+          }
+          return 0
+        })
+        
+        populateMeetingList(meetings)
+        showStep1()
+      })
+      .catch(e => {
+        displayError('There was an error contacting the server. Please make sure you are logged into your Adobe Connect account.')
+      })
+    }
+
+    function populateMeetingList(meetings){
+      meetings.forEach(function(meeting) {
+        listContainer.innerHTML += `<option value="${meeting['_sco-id']}" data-path="${meeting['url-path']}">${meeting.name} (${meeting['url-path']})</option>`
+      })
+    }
+
+    function showStep1() {
+      const step1 = document.querySelector('.step1')
+      step1.classList.remove('hidden')
+      btNext.classList.add('hidden')
+      resetStep2();
+      resetStep3();
+      currentStep = 1
+    }
+    
+    function resetStep2(){
+      const step2 = document.querySelector('.step2')
+      step2.classList.add('hidden')
+      resetStep3()
+    }
+
+    function showStep2(meeting) {
+      resetStep3()
+      const step2 = document.querySelector('.step2')
+      const oldURL = document.querySelector('.step2 .old-url span')
+      oldURL.innerHTML = `${window.location.protocol}//${window.location.hostname}${meeting.urlPath}`
+      newURLField.value = ''
+      step2.classList.remove('hidden')
+      btNext.classList.remove('hidden')
+      btNext.innerHTML = "Next Step"
+      updates.oldSCO = meeting.scoID
+      updates.oldURL = meeting.urlPath
+      currentStep = 2
+    }
+    
+    function resetStep3(){
+      const step3 = document.querySelector('.step3')
+      const messageArea = document.querySelector('.application-message')
+      messageArea.classList.add('hidden')
+      step3.classList.add('hidden')
+    }
+    
+    function showStep3(newPath){
+      updates.newURL = newPath
+      const step3 = document.querySelector('.step3')
+      const confirmOld = document.querySelector('#confirmOld')
+      const confirmNew = document.querySelector('#confirmNew')
+      confirmOld.innerHTML = `${window.location.protocol}//${window.location.hostname}${updates.oldURL}`
+      confirmNew.innerHTML = `${window.location.protocol}//${window.location.hostname}/${updates.newURL}`
+      btNext.innerHTML = "Submit URL Change"
+      step3.classList.remove('hidden')
+      currentStep = 3
+    }
+
+    function displayComplete() {
+      const messageArea = document.querySelector('.application-message')
+      const href = window.location.href
+      messageArea.classList.remove('hidden')
+      messageArea.innerHTML = `<p>The meeting URL was updated successfully. Click <b><i>Start Over</i></b> to change another meeting.</p>
+      <a class="button" href="${href}">Start Over</a>`
+    }
+    
+    function displayError(message){
+      const messageArea = document.querySelector('.application-message')
+      const href = window.location.href
+      messageArea.classList.remove('hidden')
+      messageArea.innerHTML = ` <p>${message} Click <b><i>Start Over</i></b> to try again.</p>
+                                <a class="button" href="${href}">Start Over</a>`
+    }
+
+
+    //Start the party
+    init()
+    getMeetings()
+
+  </script>
+
+</body>
+</html>

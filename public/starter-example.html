@@ -1,0 +1,96 @@
+<!-- 
+  File: starter-example.html
+  
+  Author: Dustin Tauer, Easel Solutions (dustin@easelsolutins.com)
+
+  Description: This is a very basic example file that calls the report-my-meetings API and displays a list of meetings. This file is meant to be a starting point for working with the Adobe Connect API. 
+  
+-->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Start Connect API Example</title>
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+  
+  <!-- Milligram CSS minified -->
+  <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+
+  <!-- Your custom styles go here -->
+  <style>
+  
+  </style>
+
+</head>
+<body>
+
+  <h3>My Meetings</h3>
+  <ul id="meetings"></ul>
+
+  <!-- The axios library is used for the asynchronous calls to the server. Alternatively you could use the fetch() API or something like jQuery.ajax() -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+
+  <!-- This library is used for converty the XML returned from the server to JSON. You could inline the JavaScript to remove the dependency -->
+  <script src="https://cdn.rawgit.com/abdmob/x2js/master/xml2json.js"></script>
+  <script>
+
+    // utility function for converting XML to JSON (using the xml2json library)
+    const toJSON = (xml) => {
+      const x2js = new X2JS()
+      return x2js.xml_str2json(xml)
+    }
+
+    // Time to make an API call. 
+    
+    // We are assuming this file will be loaded as a piece of content on your Adobe Connect server and that
+    // you will already be logged in. You can build a login interface to manage the user account but the easiest method is to let
+    // the Adobe Connect server take care of that.
+
+    // The Node server used for development will send all requests to "/api/xml" to the Connect server specified in the varaibles.env file.
+    // Do not hard-code your server URL in this file unless you are planning on hosting this file somewhere else (in which case you'll need to modify the Node server.js file)
+
+    // Get a reference to the <ul> where we'll put our meetings
+    const meetingList = document.querySelector('#meetings')
+
+    // Use axios for the API calls
+    // Documentation: https://helpx.adobe.com/adobe-connect/webservices/report-my-meetings.html
+    axios({
+      method: 'get',
+      url: '/api/xml', // again, no need to include the full URL for the Connect server
+      params: {
+        action: 'report-my-meetings', // name of the API action you want to call
+        'sort-name': 'asc' // list any other API varaibles. 
+      }
+    })
+    // The chained .then() method fires once we get a response back from the server
+    .then( result => {
+      // convert the resulting XML to JSON
+      const data = toJSON(result.data)
+
+      // Check the browser console to see the result:
+      console.log('Results: ', data)
+
+      // grab the meetings object (which is the array of meetings)
+      const meetings = data.results['my-meetings'].meeting
+
+      // Clear out the current list (if there was anything in there)
+      meetingList.innerHTML = ''
+      // Loop through the meetings and append a <li> for each meeting to the <ul> on screen
+      meetings.forEach( meeting => {
+        meetingList.innerHTML += `<li>${meeting.name} (${meeting['url-path']})</li>`
+      })
+    })
+    // The chained .catch() method will fire if there's an uncaught error thrown
+    .catch( e => {
+      meetingList.innerHTML = `<li>An error occured while retrieving your meetings: ${e}</li>`
+    })
+  </script>
+  
+
+</body>
+</html> 
