@@ -38,3 +38,5 @@ Node is acting as a proxy server to bypass CORS issues on the Connect Server. Wh
 
 ### Starter File
 In the `/public` directory, the `start-example.html` file contains a basic API call to the `report-my-meetings` action. This is a good place to start if you want to begin experimenting with an API. I'm loading some remote CSS/JS from CDNs. Any custom JavaScript/CSS is embedded directly in the file so there aren't any local dependencies. If you wanted to use your own external CSS, JS, images, etc, they will either need to be hosted on a remote server or packaged with the HTML file as a SCORM/AICC-compliant bundle.
+
+The `starter-template.html` file is a stripped down version of the example file with minimal commenting and no API calls.

@@ -2,7 +2,6 @@ const express = require("express");
 const path = require("path");
 const axios = require("axios");
 const fs = require("fs");
-// const xml2json = require('xml2json')
 const xml2json = require("simple-xml2json");
 const server = express();
 
@@ -49,9 +48,7 @@ server.get("/api/xml", async (req, res) => {
   });
 
   // Grab the data from the API result and convert it to JSON
-  // const data = JSON.parse(xml2json.toJson(results.data))
   const data = xml2json.parser(results.data);
-  console.log(data);
 
   // There's a chance the session/cookie will expire for lack of activity. If we don't get back a status of "ok", our cookie is probably invalid.
   // Clear the cookie and try the whole thing again.

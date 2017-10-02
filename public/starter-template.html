@@ -1,0 +1,69 @@
+<!-- 
+  File: starter-template.html
+  Author: Dustin Tauer, Easel Solutions (dustin@easelsolutins.com)
+  Description: Starter file without any API calls and minimal commenting
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Start Connect API Example</title>
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+
+  <!-- Milligram CSS minified -->
+  <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+
+  <!-- Your custom styles go here -->
+  <style>
+
+  </style>
+
+</head>
+
+<body>
+
+  <h3>Starter file</h3>
+
+  <!-- JavaScript -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.rawgit.com/abdmob/x2js/master/xml2json.js"></script>
+
+  <!-- Custom Application Code -->
+  <script>
+    // utility function for converting XML to JSON (using the xml2json library)
+    const toJSON = (xml) => {
+      const x2js = new X2JS()
+      return x2js.xml_str2json(xml)
+    }
+
+    // API Calls
+    axios({
+        method: 'get',
+        url: '/api/xml', // again, no need to include the full URL for the Connect server
+        params: {
+          action: 'ACTION-GOES-HERE' // name of the API action you want to call  
+        }
+      })
+      .then(result => {
+        // convert the resulting XML to JSON
+        const data = toJSON(result.data)
+        console.log('Results: ', data)
+
+        // Handle Results
+
+
+      })
+      .catch(e => {
+        meetingList.innerHTML = `<li>An error occured while retrieving your meetings: ${e}</li>`
+      })
+  </script>
+
+
+</body>
+
+</html>
