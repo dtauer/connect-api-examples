@@ -220,6 +220,7 @@
       .then(function(results){
         // convert XML to JSON
         const response = toJSON(results.data)
+        console.log('Response', response)
   
         // TODO: Make sure it's not an error
         wrapper.classList.remove('loading')

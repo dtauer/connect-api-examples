@@ -7,7 +7,7 @@ This project tries to accomplish two things:
 Any of the HTML files in the `/public` folder can be added as a piece of content on your Adobe Connect server. Some examples require you to be an administrator because they are using administrator-level APIs. Other will work for any user. In most cases you will have to be logged in so do not give the files public access. These files will not run locally on your computer without a development server running. If you want to run the files locally (or do your own development), you'll need to install the whole project.
 
 ### Installation
-Firstly, You will need to have `Node (+7.6)` installed: https://nodejs.org/en/. I'm requiring 7.6 or higher because I use async/await on the Node side. If you need to run a lower version, you'll need to modify server.js accordingly.
+Firstly, You will need to have `Node (+10.10)` installed: https://nodejs.org/en/. If you need to run a lower version, you'll need to modify server.js accordingly.
 
 Once you have Node installed:
   1) Download or clone this repository.

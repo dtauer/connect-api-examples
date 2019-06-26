@@ -30,9 +30,12 @@ let retries = 0; // The seesion can expire, so we'll try to log in again if that
 server.get("/api/xml", async (req, res) => {
   // If there isn't a session, login to get a session (using the credentials in variables.env)
   if (cookie === "") {
+    const username = encodeURIComponent(process.env.CONNECT_USERNAME)
+    const password = encodeURIComponent(process.env.CONNECT_PASSWORD)
+    console.log(process.env.CONNECT_USERNAME, encodeURIComponent(process.env.CONNECT_USERNAME))
+    console.log(process.env.CONNECT_PASSWORD, encodeURIComponent(process.env.CONNECT_PASSWORD))
     const login = await axios({
-      url: `${process.env.CONNECT_URL}/api/xml?action=login&login=${process.env.CONNECT_USERNAME}&password=${process.env
-        .CONNECT_PASSWORD}`
+      url: `${process.env.CONNECT_URL}/api/xml?action=login&login=${username}&password=${password}`
     });
     // Grab the cookie from the login result. We'll pass this with each subsequent request
     cookie = login.headers["set-cookie"][0];
@@ -52,18 +55,18 @@ server.get("/api/xml", async (req, res) => {
 
   // There's a chance the session/cookie will expire for lack of activity. If we don't get back a status of "ok", our cookie is probably invalid.
   // Clear the cookie and try the whole thing again.
-  if (data.results.status.code !== "ok" && retries < 3) {
+  if (data.results.status.code !== "ok" && retries < 2) {
     retries++; //increment our retry variable. Only want to rety a couple times so we don't end up in an infinite loop
     cookie = "";
     console.log(`Cookie is invalid or you are logged out. Retry #${retries}`);
     res.redirect(req.url);
   } else {
-    if (retries === 3) {
+    if (retries === 2) {
       console.log(
-        "Node tried 3 times to log in to your Connect account. Check your credentials in varaibles.env. Also try restarting the node server."
+        "Node tried 2 times to log in to your Connect account. Check your credentials in varaibles.env. Also try restarting the node server."
       );
     }
-    retries = 0; // We can reset retries since we logged in correctly (or failed > 3 times)
+    retries = 0; // We can reset retries since we logged in correctly (or failed > 2 times)
 
     // Finally, we send the original XML result back to our client application.
     res.send(results.data);

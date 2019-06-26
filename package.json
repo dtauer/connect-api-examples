@@ -1,7 +1,8 @@
 {
   "name": "connect-api-examples",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Playground for working with the Adobe Connect API",
+  "repository": "https://github.com/dtauer/connect-api-examples.git",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -10,7 +11,7 @@
   "author": "Dustin Tauer",
   "license": "MIT",
   "dependencies": {
-    "axios": "^0.16.2",
+    "axios": "^0.19.0",
     "dotenv": "^4.0.0",
     "express": "^4.15.4",
     "simple-xml2json": "^1.2.3"
