@@ -1,0 +1,150 @@
+<!-- 
+  File: starter-template.html
+  Author: Dustin Tauer, Easel Solutions (dustin@easelsolutins.com)
+  Description: Starter file without any API calls and minimal commenting
+-->
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Start Connect API Example</title>
+
+  <!-- Google Fonts -->
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,300italic,700,700italic">
+
+  <!-- Milligram CSS minified -->
+  <link rel="stylesheet" href="//cdn.rawgit.com/milligram/milligram/master/dist/milligram.min.css">
+
+  <!-- Your custom styles go here -->
+  <style>
+
+    .wrapper {
+      max-width: 600px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+  
+  <form id="scoForm" action="" class="wrapper">
+    <h3>Change Room Access</h3>
+    <p>Enter the SCO-ID of a folder and any meeting in that folder with access "Anyone who has the URL..." will be updated to "Only registered users and accepted guests.</p>
+    <label for="sco">Folder SCO-ID:</label>
+    <input type="text" id="sco" name="sco">
+    <input type="submit" value="Submit">
+  </form>
+
+  <p id="result"></p>
+
+
+
+  <!-- JavaScript -->
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.rawgit.com/abdmob/x2js/master/xml2json.js"></script>
+
+  <!-- Custom Application Code -->
+  <script>
+    // utility function for converting XML to JSON (using the xml2json library)
+    const toJSON = (xml) => {
+      const x2js = new X2JS()
+      return x2js.xml_str2json(xml)
+    }
+
+    //api/xml?action=sco-expanded-contents&sco-id=7&filter-type=meeting&filter-icon=meeting
+    const listAllRooms = async function (sco){
+      const output = document.querySelector('#result')
+      output.innerHTML = '...loading. Please wait.'
+      axios({
+        url: '/api/xml',
+        method: 'get',
+        params: {
+          action: 'sco-expanded-contents',
+          'sco-id': sco,
+          'filter-type': 'meeting',
+          'filter-icon': 'meeting'
+        }
+      }).then(function(result){
+        const data = toJSON(result.data)
+        let scos = data.results['expanded-scos'].sco
+        if(!Array.isArray(scos)) {
+          scos = [scos]
+        }
+        getPublicRooms(scos)
+      })
+    }
+
+    //api/xml?action=permissions-info&acl-id=xxxxxx&filter-principal-id=public-access
+    const getPublicRooms = async function(rooms){
+      const roomPromises = []
+      rooms.forEach(room => {
+        roomPromises.push(axios({
+          url: '/api/xml',
+          method: 'get',
+          params: {
+            action: 'permissions-info',
+            'acl-id': room['_sco-id'],
+            'filter-principal-id': 'public-access'
+          }
+        }))
+      })
+      Promise.all(roomPromises).then(function(result){
+        const publicRooms = []
+        result.forEach(room => {
+          const permissions = toJSON(room.data).results.permissions.principal['_permission-id']
+          if(permissions == 'view-hidden'){
+            publicRooms.push(room.config.params['acl-id'])
+          }
+        })
+        changePermissions(publicRooms)
+      })
+    }
+
+    //api/xml?action=permissions-update&acl-id=xxxxxx&principal-id=public-access&permission-id=remove
+    const changePermissions = async function(rooms){
+      const roomPromises = []
+      rooms.forEach(room => {
+        roomPromises.push(axios({
+          url: '/api/xml',
+          method: 'get',
+          params: {
+            action: 'permissions-update',
+            'acl-id': room,
+            'principal-id': 'public-access',
+            'permission-id': 'remove'
+          }
+        }))
+      })
+      Promise.all(roomPromises).then(function(result){
+        const count = result.length
+        const output = document.querySelector('#result')
+        output.innerHTML = `${count} Rooms Updated`
+      })
+    }
+
+    const form = document.querySelector('#scoForm')
+    form.addEventListener('submit', e => {
+      const output = document.querySelector('#result')
+      output.innerHTML = ''
+      e.preventDefault();
+      const sco = document.querySelector('#sco').value
+      if(sco){
+        listAllRooms(sco)
+      }
+    })
+
+
+
+
+
+  </script>
+
+
+</body>
+
+</html>
