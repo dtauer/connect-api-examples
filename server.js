@@ -32,8 +32,6 @@ server.get("/api/xml", async (req, res) => {
   if (cookie === "") {
     const username = encodeURIComponent(process.env.CONNECT_USERNAME)
     const password = encodeURIComponent(process.env.CONNECT_PASSWORD)
-    console.log(process.env.CONNECT_USERNAME, encodeURIComponent(process.env.CONNECT_USERNAME))
-    console.log(process.env.CONNECT_PASSWORD, encodeURIComponent(process.env.CONNECT_PASSWORD))
     const login = await axios({
       url: `${process.env.CONNECT_URL}/api/xml?action=login&login=${username}&password=${password}`
     });
